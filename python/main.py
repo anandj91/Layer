@@ -20,7 +20,7 @@ class Sessions:
             .merge(train_purchases, on='session_id') \
             .rename(columns={"item_id_x": "item_ids", "date_x": "times", "item_id_y": "target_item_id", "date_y": "target_time"})
         tmp['items'] = tmp.apply(lambda row: self._create_items(row), axis=1)
-        tmp['win'] = tmp.apply(lambda row: row['items'][0].time.month, axis = 1)
+        tmp['win'] = tmp.apply(lambda row: row['items'][0].time.month * row['items'][0].time.year, axis = 1)
         tmp['count'] = tmp.apply(lambda row: len(row['items']), axis = 1)
         tmp['duration'] = tmp.apply(lambda row: (row['items'][-1].time - row['items'][0].time), axis = 1)
         tmp['target'] = tmp.apply(lambda row: Item(row['target_item_id'], row['target_time']), axis = 1)
@@ -28,6 +28,8 @@ class Sessions:
         tmp['items'] = tmp.apply(lambda row: self._append(row['items'], row['target']), axis = 1)
 
         tmp = tmp.drop(['item_ids', 'times', 'target_item_id', 'target_time'], axis=1)
+
+        tmp = tmp.set_index(['session_id'])
 
         self.sessions = tmp
 
@@ -47,10 +49,9 @@ class Sessions:
         items.append(item)
         return items
 
-
-train_sessions = pd.read_csv("/home/anandj/data/code/Layer/dressipi_recsys2022/train_sessions.csv", parse_dates=True, nrows = 100)
+train_sessions = pd.read_csv("/home/anandj/data/code/Layer/dressipi_recsys2022/train_sessions.csv", parse_dates=True)
 print(train_sessions)
-train_purchases = pd.read_csv("/home/anandj/data/code/Layer/dressipi_recsys2022/train_purchases.csv", parse_dates=True, nrows = 100)
+train_purchases = pd.read_csv("/home/anandj/data/code/Layer/dressipi_recsys2022/train_purchases.csv", parse_dates=True)
 print(train_purchases)
 
 sessions = Sessions(train_sessions, train_purchases)
