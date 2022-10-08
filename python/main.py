@@ -62,18 +62,37 @@ class ItemCache:
         self.buy_features = item_sess[item_sess['item_id'] == item_sess['target_item_id']].groupby('item_id', group_keys=True) \
                 .agg({'session_id': pd.Series.nunique, 'count': pd.Series.sum, 'duration': pd.Series.sum})
 
+        self.candidates = sess['target_item_id'].unique()
+
         print('sess_features', self.sess_features)
         print('buy_features', self.buy_features)
+        print('candidates', self.candidates)
 
-train_sessions = pd.read_csv("/home/anandj/data/code/Layer/dressipi_recsys2022/train_sessions.csv", parse_dates=True, nrows=10000)
-train_purchases = pd.read_csv("/home/anandj/data/code/Layer/dressipi_recsys2022/train_purchases.csv", parse_dates=True, nrows=10000)
+class ItemFeatures:
+    def __init__(self, feat):
+        feat['fid'] = feat.apply(lambda row: str(row['feature_category_id']), axis=1)
+        feat['fval'] = feat.apply(lambda row: str(row['feature_category_id']) + '-' + str(row['feature_value_id']), axis=1)
+        fid_cols = feat[['item_id', 'fid']].rename(columns={"fid": "col"})
+        fval_cols = feat[['item_id', 'fval']].rename(columns={"fval": "col"})
+        fcols = pd.concat([fid_cols, fval_cols])
+
+        self.features = fid_cols.groupby(['item_id', 'col']).size()
+
+        cols = fcols['col'].unique()
+        self.col_idx_map = pd.DataFrame({'col': cols, 'idx': pd.Series(range(0, len(cols)))})
+
+        item_count = len(feat['item_id'].unique())
+        self.sel_feat = self.features[self.features > item_count * 0.05]
+
+train_sessions = pd.read_csv("/home/anandj/data/code/Layer/dressipi_recsys2022/train_sessions.csv", parse_dates=True)
+train_purchases = pd.read_csv("/home/anandj/data/code/Layer/dressipi_recsys2022/train_purchases.csv", parse_dates=True)
+item_features = pd.read_csv("/home/anandj/data/code/Layer/dressipi_recsys2022/item_features.csv")
 train_sessions['date'] = pd.to_datetime(train_sessions['date'])
 train_purchases['date'] = pd.to_datetime(train_purchases['date'])
-print(train_sessions)
-print(train_purchases)
+
+ifeat = ItemFeatures(item_features)
 
 sessions = Sessions(train_sessions, train_purchases)
-print(sessions)
 
 start_month = pd.to_datetime("2020-01-01 00:00:00")
 month = relativedelta(months=1)
