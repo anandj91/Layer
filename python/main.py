@@ -64,10 +64,6 @@ class ItemCache:
 
         self.candidates = sess['target_item_id'].unique()
 
-        print('sess_features', self.sess_features)
-        print('buy_features', self.buy_features)
-        print('candidates', self.candidates)
-
 class ItemFeatures:
     def __init__(self, feat):
         feat['fid'] = feat.apply(lambda row: str(row['feature_category_id']), axis=1)
